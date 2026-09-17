@@ -29,7 +29,8 @@ import {
   pluginSessionMenuActions,
   runControlUiPluginAction,
 } from "../plugins/control-ui-actions.ts";
-import { renderSidebarAgentMenu, renderSidebarIdentityMenu } from "./app-sidebar-agent-menu.ts";
+import { renderSidebarAgentMenu } from "./app-sidebar-agent-menu.ts";
+import { renderSidebarIdentityMenu } from "./app-sidebar-identity-menu.ts";
 import { renderSidebarCustomizeMenu, renderSidebarMoreMenu } from "./app-sidebar-nav-menus.ts";
 import { formatSidebarTimestamp } from "./app-sidebar-session-catalogs.ts";
 import {
@@ -38,6 +39,7 @@ import {
   renderSidebarSessionSortMenu,
 } from "./app-sidebar-session-menu-renderers.ts";
 import "../styles/sidebar-menus.css";
+import { showConfirmDialog } from "./confirm-dialog.ts";
 import { sessionMenuReasons } from "./session-menu-access.ts";
 import type { SessionMenuAction } from "./session-menu.ts";
 import {
@@ -179,9 +181,12 @@ export function renderSidebarIdentityMenuForController(controller: SidebarMenusC
       updateAttentionDismissal,
     ),
   );
+  const gateway = context?.gateway;
   return renderSidebarIdentityMenu({
     position,
     canPairDevice: host.canPairDevice,
+    // Probe browser storage only while the menu is actually open.
+    canForgetDevice: position !== null && (gateway?.hasStoredDeviceToken?.() ?? false),
     basePath: host.basePath,
     gatewayVersion: host.gatewayVersion,
     updateAttentionDismissed,
@@ -198,6 +203,18 @@ export function renderSidebarIdentityMenuForController(controller: SidebarMenusC
     },
     onNavigate: (routeId, options) => host.onNavigate?.(routeId, options),
     onPairMobile: () => host.onPairMobile?.(),
+    onForgetDevice: () => {
+      void showConfirmDialog({
+        title: t("profilePage.identity.forgetDeviceConfirmTitle"),
+        message: t("profilePage.identity.forgetDeviceConfirmMessage"),
+        confirmLabel: t("profilePage.identity.forgetDeviceConfirmLabel"),
+        danger: true,
+      }).then((confirmed) => {
+        if (confirmed) {
+          gateway?.forgetDeviceToken?.();
+        }
+      });
+    },
     onRetryConnect: host.onRetryConnect,
   });
 }
