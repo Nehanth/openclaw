@@ -8,7 +8,7 @@ import { setAvatarGatewayOrigin } from "../lib/identity-avatar-context.ts";
 import { loadDeviceAuthToken, storeDeviceAuthToken } from "../lib/nodes/index.ts";
 import { createStorageMock } from "../test-helpers/storage.ts";
 import { createApplicationGateway } from "./gateway-store.ts";
-import { loadSettings } from "./settings.ts";
+import { loadSettings, persistSessionToken } from "./settings.ts";
 
 class FakeGatewayClient {
   readonly instanceId: string;
@@ -155,6 +155,67 @@ describe("createApplicationGateway stored device credential", () => {
     expect(loadDeviceAuthToken({ deviceId: DEVICE_ID, gatewayUrl, role: "operator" })).toBeNull();
   });
 
+  it("targets the live gateway after switching connections", () => {
+    // Regression (review P1): connect() replaces the connection object, so a
+    // helper holding the construction-time object would keep probing the first
+    // gateway — hiding the action or deleting the wrong credential.
+    const { gateway } = createStore();
+    gateway.start();
+    const firstUrl = gateway.connection.gatewayUrl;
+    seedDeviceIdentity();
+    gateway.connect({ gatewayUrl: OTHER_GATEWAY });
+    expect(gateway.connection.gatewayUrl).toBe(OTHER_GATEWAY);
+    storeDeviceAuthToken({
+      deviceId: DEVICE_ID,
+      gatewayUrl: firstUrl,
+      role: "operator",
+      token: "first-gateway-token",
+      scopes: ["operator.read"],
+    });
+    storeDeviceAuthToken({
+      deviceId: DEVICE_ID,
+      gatewayUrl: OTHER_GATEWAY,
+      role: "operator",
+      token: "second-gateway-token",
+      scopes: ["operator.read"],
+    });
+
+    expect(gateway.hasStoredDeviceToken?.()).toBe(true);
+    expect(gateway.forgetDeviceToken?.()).toBe(true);
+
+    // The live gateway's credential is the one forgotten…
+    expect(
+      loadDeviceAuthToken({ deviceId: DEVICE_ID, gatewayUrl: OTHER_GATEWAY, role: "operator" }),
+    ).toBeNull();
+    // …and the previous gateway's credential survives the switch.
+    expect(
+      loadDeviceAuthToken({ deviceId: DEVICE_ID, gatewayUrl: firstUrl, role: "operator" })?.token,
+    ).toBe("first-gateway-token");
+  });
+
+  it("clears the persisted session token so a reload cannot restore the sign-in", () => {
+    // Regression (review P1): a token-auth hello persists the shared token in
+    // session storage. A rejected credential-free reconnect never rewrites it,
+    // so forget itself must clear the entry or a reload signs the tab back in.
+    const { gateway } = createStore();
+    gateway.start();
+    const gatewayUrl = gateway.connection.gatewayUrl;
+    seedDeviceIdentity();
+    storeDeviceAuthToken({
+      deviceId: DEVICE_ID,
+      gatewayUrl,
+      role: "operator",
+      token: "stored-device-token",
+      scopes: ["operator.read"],
+    });
+    persistSessionToken(gatewayUrl, "persisted-shared-token");
+    expect(loadSettings().token).toBe("persisted-shared-token");
+
+    expect(gateway.forgetDeviceToken?.()).toBe(true);
+
+    expect(loadSettings().token).toBe("");
+  });
+
   it("forgets a credential persisted only under a role alias", () => {
     // Regression: an alias-keyed entry (" operator ") is accepted by the
     // reader, so Forget must actually delete it instead of reporting success
@@ -197,10 +258,13 @@ describe("createApplicationGateway stored device credential", () => {
       token: "current-gateway-token",
       scopes: ["operator.read"],
     });
+    persistSessionToken(gatewayUrl, "persisted-shared-token");
 
     expect(gateway.forgetDeviceToken?.()).toBe(true);
 
     expect(loadDeviceAuthToken({ deviceId: DEVICE_ID, gatewayUrl, role: "operator" })).toBeNull();
+    // The persisted session token goes even without a reconnect to rewrite it.
+    expect(loadSettings().token).toBe("");
     expect(clients.length).toBe(0);
   });
 });

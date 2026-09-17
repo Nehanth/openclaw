@@ -9,10 +9,11 @@ import {
   peekStoredDeviceIdentityId,
 } from "../lib/nodes/index.ts";
 import type { ApplicationGateway, ApplicationGatewayConnectOptions } from "./gateway.ts";
+import { persistSessionToken } from "./settings.ts";
 
 type DeviceCredentialHost = {
-  /** Live connection state owned by the store; gatewayUrl reads stay current. */
-  connection: { readonly gatewayUrl: string };
+  /** connect() replaces the store's connection object, so reads must be live. */
+  gatewayUrl: () => string;
   connect: (overrides: ApplicationGatewayConnectOptions) => void;
   isStopped: () => boolean;
 };
@@ -27,7 +28,7 @@ export function createDeviceCredentialMethods(
     }
     const entry = loadDeviceAuthToken({
       deviceId,
-      gatewayUrl: host.connection.gatewayUrl,
+      gatewayUrl: host.gatewayUrl(),
       role: CONTROL_UI_OPERATOR_ROLE,
     });
     return entry ? { deviceId } : null;
@@ -39,13 +40,19 @@ export function createDeviceCredentialMethods(
       if (!stored) {
         return false;
       }
+      const gatewayUrl = host.gatewayUrl();
       // Token-only reset: keep the browser device identity so the gateway can
       // mint a fresh token for the same device on the next pairing/login.
       clearDeviceAuthToken({
         deviceId: stored.deviceId,
-        gatewayUrl: host.connection.gatewayUrl,
+        gatewayUrl,
         role: CONTROL_UI_OPERATOR_ROLE,
       });
+      // A token-auth hello persists this gateway's shared token per tab. The
+      // credential-free reconnect below gets rejected, so nothing later
+      // rewrites that entry — without this explicit clear a reload would
+      // restore the old sign-in the operator just confirmed forgetting.
+      persistSessionToken(gatewayUrl, "");
       // A stopped gateway stays on the login gate; the cleared credential
       // simply won't be offered on the next explicit connect.
       if (!host.isStopped()) {

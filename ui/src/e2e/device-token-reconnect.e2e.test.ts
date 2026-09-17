@@ -474,5 +474,17 @@ describeControlUiE2e("Control UI device-token reconnect E2E", () => {
       return null;
     });
     expect(sessionToken).toBeNull();
+
+    // Review P1 regression: loadSettings() restores the session-scoped shared
+    // token on boot, so a reload after Forget must not sign the tab back in
+    // with the forgotten shared credential. Drop the #token fragment first so
+    // the reload exercises the storage path, not the URL sign-in path. The
+    // device token is not asserted here: this mock grants one on any accepted
+    // hello (including the post-forget reconnect), which a real token-auth
+    // gateway rejecting the credential-free connect would never do.
+    await page.evaluate(() => history.replaceState(null, "", location.href.split("#")[0]));
+    await page.reload();
+    const reloadConnect = await gateway.waitForRequest("connect");
+    expect(readConnectAuth(reloadConnect)?.token).toBeUndefined();
   });
 });

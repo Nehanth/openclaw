@@ -626,7 +626,11 @@ export function createApplicationGateway(
       }
       setSnapshot({ selfUser: { ...snapshot.selfUser, ...patch } });
     },
-    ...createDeviceCredentialMethods({ connection, connect, isStopped: () => stopped }),
+    ...createDeviceCredentialMethods({
+      gatewayUrl: () => connection.gatewayUrl,
+      connect,
+      isStopped: () => stopped,
+    }),
   };
   return gateway;
 }
