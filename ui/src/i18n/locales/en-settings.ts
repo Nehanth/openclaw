@@ -4,7 +4,7 @@ import { en } from "./en.ts";
 // Settings copy loads with its lazy page or search, not the startup shell.
 const enSettings = {
   connection: {
-    browserSignIn: {
+    browser: {
       title: "Browser",
       savedSignIn: "Saved sign-in for this gateway",
       forgetDevice: "Forget this browser",

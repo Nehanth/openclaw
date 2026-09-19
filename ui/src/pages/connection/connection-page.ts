@@ -304,11 +304,11 @@ export class ConnectionPage extends OpenClawLightDomElement {
     const gateway = this.context.gateway;
     const gatewayUrl = gateway.connection.gatewayUrl;
     const confirmed = await showConfirmDialog({
-      title: t("connection.browserSignIn.confirmTitle"),
-      message: t("connection.browserSignIn.confirmMessage", {
+      title: t("connection.browser.confirmTitle"),
+      message: t("connection.browser.confirmMessage", {
         gateway: formatGatewayHost(gatewayUrl),
       }),
-      confirmLabel: t("connection.browserSignIn.confirmLabel"),
+      confirmLabel: t("connection.browser.confirmLabel"),
       danger: true,
     });
     // A confirmation for one Gateway must never reset a newly selected Gateway.

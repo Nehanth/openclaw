@@ -354,11 +354,11 @@ export function renderConnection(props: ConnectionProps) {
     renderSystemSection(props),
     props.canForgetDevice
       ? renderSettingsSection(
-          { title: t("connection.browserSignIn.title") },
+          { title: t("connection.browser.title") },
           renderSettingsRow({
-            title: t("connection.browserSignIn.savedSignIn"),
+            title: t("connection.browser.savedSignIn"),
             control: html`<button class="btn" @click=${props.onForgetDevice}>
-              ${t("connection.browserSignIn.forgetDevice")}
+              ${t("connection.browser.forgetDevice")}
             </button>`,
           }),
         )
