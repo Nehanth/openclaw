@@ -33,7 +33,6 @@ import { syncDropdownItemRadio, trackDropdownKeyboardDismissal } from "./web-awe
 type SidebarIdentityMenuParams = {
   position: { x: number; bottom: number; width: number };
   canPairDevice: boolean;
-  canForgetDevice: boolean;
   basePath: string;
   gatewayVersion: string | null;
   updateAttentionDismissed: boolean;
@@ -45,7 +44,6 @@ type SidebarIdentityMenuParams = {
   onClose: (restoreFocus?: boolean) => void;
   onNavigate: (routeId: NavigationRouteId, options?: ApplicationNavigationOptions) => void;
   onPairMobile: () => void;
-  onForgetDevice?: () => void;
   onRetryConnect?: () => void;
 };
 
@@ -199,9 +197,6 @@ export function renderSidebarIdentityMenu(params: SidebarIdentityMenuParams) {
           case `${COMMAND_VALUE_PREFIX}pair-mobile`:
             params.onPairMobile();
             break;
-          case `${COMMAND_VALUE_PREFIX}forget-device`:
-            params.onForgetDevice?.();
-            break;
           case `${COMMAND_VALUE_PREFIX}apps`:
             params.onNavigate("apps");
             break;
@@ -269,19 +264,6 @@ export function renderSidebarIdentityMenu(params: SidebarIdentityMenuParams) {
         <span slot="icon" class="nav-item__icon" aria-hidden="true">${icons.smartphone}</span>
         <span class="sidebar-customize-menu__text">${t("devices.pairing.button")}</span>
       </wa-dropdown-item>
-      ${
-        params.canForgetDevice
-          ? html`<wa-dropdown-item
-              class="sidebar-customize-menu__item sidebar-identity-menu__forget-device"
-              value="command:forget-device"
-            >
-              <span slot="icon" class="nav-item__icon" aria-hidden="true">${icons.key}</span>
-              <span class="sidebar-customize-menu__text">
-                ${t("profilePage.identity.forgetDevice")}
-              </span>
-            </wa-dropdown-item>`
-          : nothing
-      }
       <wa-dropdown-item class="sidebar-customize-menu__item" value="command:apps">
         <span slot="icon" class="nav-item__icon" aria-hidden="true">${icons.layoutGrid}</span>
         <span class="sidebar-customize-menu__text">${t("agentChip.getApps")}</span>

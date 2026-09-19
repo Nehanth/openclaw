@@ -324,7 +324,7 @@ describeControlUiE2e("Control UI device-token reconnect E2E", () => {
     await rotateReveal.waitFor({ state: "detached" });
   });
 
-  it("forgets this browser's stored credential from the identity menu", async () => {
+  it("forgets this browser's stored credential from Gateway settings", async () => {
     const context = await createContext();
     // Seed the stored device token through a shared-token first visit, then
     // close that page so its session token cannot mask credential selection.
@@ -370,10 +370,10 @@ describeControlUiE2e("Control UI device-token reconnect E2E", () => {
     );
     expect(identityBefore).not.toBeNull();
 
-    await page.locator(".sidebar-identity-card").click();
-    const forgetRow = page.locator('wa-dropdown-item[value="command:forget-device"]');
+    await page.goto(`${server.baseUrl}settings/connection`);
+    const forgetRow = page.getByRole("button", { name: "Forget this browser", exact: true });
     await forgetRow.waitFor({ state: "visible" });
-    await captureProof(page, "identity-menu-forget-device.png");
+    await captureProof(page, "gateway-settings-browser-sign-in.png");
     await forgetRow.click();
     const confirmButton = page.getByRole("button", { name: "Forget", exact: true });
     await confirmButton.waitFor({ state: "visible" });
@@ -439,8 +439,8 @@ describeControlUiE2e("Control UI device-token reconnect E2E", () => {
       )
       .toBeDefined();
 
-    await page.locator(".sidebar-identity-card").click();
-    const forgetRow = page.locator('wa-dropdown-item[value="command:forget-device"]');
+    await page.goto(`${server.baseUrl}settings/connection`);
+    const forgetRow = page.getByRole("button", { name: "Forget this browser", exact: true });
     await forgetRow.waitFor({ state: "visible" });
     await forgetRow.click();
     const confirmButton = page.getByRole("button", { name: "Forget", exact: true });

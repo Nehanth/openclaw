@@ -64,7 +64,12 @@ describe("createApplicationGateway stored device credential", () => {
     } as Location);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Gateway changes lazily clear cached boot state; finish that work before
+    // Vitest retires this file's environment and browser storage.
+    const { clearCachedBootState } =
+      await import("../lib/sessions/session-roster-cache.runtime.ts");
+    await clearCachedBootState();
     setAvatarGatewayOrigin(null);
     vi.unstubAllGlobals();
     vi.restoreAllMocks();

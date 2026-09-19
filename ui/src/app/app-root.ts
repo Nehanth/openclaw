@@ -109,6 +109,10 @@ export class OpenClawApp extends OpenClawLightDomElement {
         () => (this.terminalOnly ? this.context?.theme : undefined),
         (theme, notify) => theme.subscribe(notify),
       )
+      .watch(
+        () => this.context?.router,
+        (router, notify) => router.subscribe(notify),
+      )
       .effect(() => this.ownerDocument, installTitleTooltips);
   }
 
@@ -576,7 +580,14 @@ export class OpenClawApp extends OpenClawLightDomElement {
     if (initialConnectPending && !warmConnectPending) {
       return renderConnectingSplash(gatewayStartupStatus);
     }
+    const route = context.router.getState();
+    // Browser-local sign-in recovery must remain reachable after auth fails.
+    // This admits only Gateway settings; server operations still require auth.
+    const browserSignInRecovery =
+      (route.pendingMatches[0] ?? route.matches[0])?.routeId === "connection" &&
+      (context.gateway.hasStoredDeviceToken?.() ?? false);
     const shellOwnsRecovery =
+      browserSignInRecovery ||
       gatewaySnapshot.phase === "reconnecting" ||
       gatewaySnapshot.phase === "reload-required" ||
       warmConnectPending;
@@ -623,6 +634,9 @@ export class OpenClawApp extends OpenClawLightDomElement {
             onToggleGatewaySecret: () => {
               this.loginShowGatewaySecret = !this.loginShowGatewaySecret;
             },
+            onOpenGatewaySettings: context.gateway.hasStoredDeviceToken?.()
+              ? () => context.navigate("connection")
+              : undefined,
             onConnect: () => {
               this.loginGatePinned = true;
               context.gateway.connect({

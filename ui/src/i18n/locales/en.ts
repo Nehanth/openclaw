@@ -2939,11 +2939,6 @@ export const en: TranslationMap & {
         "Available after your GitHub-backed sign-in is verified. Refresh to retry.",
       ownerGitCoauthorDescription:
         "Requires GitHub-backed sign-in through Cloudflare Access or Tailscale Serve.",
-      forgetDevice: "Forget this browser",
-      forgetDeviceConfirmTitle: "Forget this browser?",
-      forgetDeviceConfirmMessage:
-        "Removes the sign-in token this browser stores for the current gateway and signs this tab out, clearing any active password or session credential, then reconnects fresh. Other gateways, your preferences, and this browser's device identity are kept. You may need to sign in or approve this browser again.",
-      forgetDeviceConfirmLabel: "Forget",
       avatarErrors: {
         invalid: "That image could not be processed.",
         sourceTooLarge: "Choose an image that is 10 MB or smaller.",
